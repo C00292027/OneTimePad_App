@@ -1,0 +1,83 @@
+import os
+import base64
+import tkinter as tk
+from tkinter import messagebox, scrolledtext
+
+def generate_key(length):
+    """Generate a random key of the specified length."""
+    return os.urandom(length)
+
+def encrypt(message, key):
+    """Encrypt a message using the given key."""
+    if len(message) != len(key):
+        raise ValueError("The length of the message and key must be the same.")
+    encrypted = bytes([m ^ k for m, k in zip(message.encode(), key)])
+    return base64.b64encode(encrypted).decode()
+
+def decrypt(encrypted_message, key):
+    """Decrypt an encrypted message using the given key."""
+    encrypted_bytes = base64.b64decode(encrypted_message.encode())
+    if len(encrypted_bytes) != len(key):
+        raise ValueError("The length of the encrypted message and key must be the same.")
+    decrypted = bytes([e ^ k for e, k in zip(encrypted_bytes, key)])
+    return decrypted.decode()
+
+def encrypt_message():
+    message = message_text.get("1.0", tk.END).strip()
+    if not message:
+        messagebox.showerror("Error", "Message cannot be empty.")
+        return
+    key = generate_key(len(message))
+    try:
+        encrypted_message = encrypt(message, key)
+        encrypted_text.delete("1.0", tk.END)
+        encrypted_text.insert(tk.END, encrypted_message)
+        key_text.delete("1.0", tk.END)
+        key_text.insert(tk.END, base64.b64encode(key).decode())
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
+
+def decrypt_message():
+    encrypted_message = encrypted_text.get("1.0", tk.END).strip()
+    key_base64 = key_text.get("1.0", tk.END).strip()
+    if not encrypted_message or not key_base64:
+        messagebox.showerror("Error", "Encrypted message and key cannot be empty.")
+        return
+    try:
+        key = base64.b64decode(key_base64)
+        decrypted_message = decrypt(encrypted_message, key)
+        message_text.delete("1.0", tk.END)
+        message_text.insert(tk.END, decrypted_message)
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
+
+# Create the main application window
+app = tk.Tk()
+app.title("One-Time Pad Encryption/Decryption")
+app.geometry("600x400")
+
+# Message text area
+tk.Label(app, text="Message:").pack()
+message_text = scrolledtext.ScrolledText(app, wrap=tk.WORD, width=70, height=5)
+message_text.pack(padx=10, pady=5)
+
+# Encrypted text area
+tk.Label(app, text="Encrypted Message:").pack()
+encrypted_text = scrolledtext.ScrolledText(app, wrap=tk.WORD, width=70, height=5)
+encrypted_text.pack(padx=10, pady=5)
+
+# Key text area
+tk.Label(app, text="Key (Base64):").pack()
+key_text = scrolledtext.ScrolledText(app, wrap=tk.WORD, width=70, height=3)
+key_text.pack(padx=10, pady=5)
+
+# Buttons for encryption and decryption
+button_frame = tk.Frame(app)
+button_frame.pack(pady=10)
+encrypt_button = tk.Button(button_frame, text="Encrypt", command=encrypt_message)
+encrypt_button.grid(row=0, column=0, padx=5)
+decrypt_button = tk.Button(button_frame, text="Decrypt", command=decrypt_message)
+decrypt_button.grid(row=0, column=1, padx=5)
+
+# Start the application
+app.mainloop()
